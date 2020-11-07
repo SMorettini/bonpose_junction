@@ -1,6 +1,6 @@
 import { bodyPartMapStore, bodyStatusStore } from './store/pose';
 import { drawLine, drawPoint } from './draw';
-import checkInterval from './store/settings/checkInterval';
+import {checkInterval, intervalValues} from './store/settings/checkInterval';
 import isFocused from './store/isFocused';
 
 /**
@@ -73,7 +73,7 @@ export function calculatePoseInRealTime(net,
                                         output) {
   let checkIntervalInMs = 0;
   checkInterval.subscribe(val => {
-    checkIntervalInMs = val * 60 * 1000; // min to ms
+    checkIntervalInMs = intervalValues[val].time;
   })
 
   let focused = true;
