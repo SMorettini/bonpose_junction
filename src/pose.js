@@ -46,16 +46,34 @@ function checkDiffBetweenPoints(point1 = null, point2 = null, threshold, toCheck
 
 /**
  *
+ * @param {Vector2D} point1
+ * @param {Vector2D} point2
+ * @param {number} width
+ * @param {"x"|"y"} toCheck
+ * @return {number}
+ */
+function computeMonitorDistance(point1 = null, point2 = null, width, toCheck = 'x') {
+  if (point1 && point2) {
+    // 2473000 is a magic constant
+    return 2473000 / Math.abs(point1[toCheck] - point2[toCheck]) / width;
+  }
+  return null;
+}
+
+/**
+ *
  * @param {{(key: string): Vector2D}} bodyPartMap body part to location vector map
  */
-function calculateBodyStatus(bodyPartMap) {
+function calculateBodyStatus(bodyPartMap, input) {
   const result = {
     shouldersAngle: null,
     eyesAngle: null,
+    monitorDistance: null,
   };
 
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
+  result.monitorDistance = computeMonitorDistance(bodyPartMap.leftEye, bodyPartMap.rightEye, input.width);
 
   return result
 }
@@ -102,7 +120,7 @@ export function calculatePoseInRealTime(net,
       prediction_history.push(currentBodyPartMap)
       if (prediction_history.length > 8) {
         prediction_history.shift();
-      } 
+      }
 
       var bodyPartMap = {};
       var marker;
@@ -120,11 +138,8 @@ export function calculatePoseInRealTime(net,
         bodyPartMap[marker]["y"] /= prediction_history.length;
       }
 
-      console.log(prediction_history);
-      console.log(bodyPartMap);
-
       bodyPartMapStore.set(bodyPartMap);
-      const bodyStatus = calculateBodyStatus(bodyPartMap);
+      const bodyStatus = calculateBodyStatus(bodyPartMap, input);
       bodyStatusStore.set(bodyStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
@@ -137,6 +152,12 @@ export function calculatePoseInRealTime(net,
         bodyPartMap['leftShoulder']["y"],
         bodyPartMap['leftShoulder']["x"],
       );
+    } else {
+      bodyStatusStore.set({
+        shouldersAngle: null,
+        eyesAngle: null,
+        monitorDistance: null,
+      });
     }
 
     requestAnimationFrame(drawFrame);
