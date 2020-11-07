@@ -1,5 +1,8 @@
 <script>
-  import checkInterval from "../store/settings/checkInterval";
+  import {
+    checkInterval,
+    intervalValues,
+  } from "../store/settings/checkInterval";
 
   import Range from "./input/Range.svelte";
 </script>
@@ -13,17 +16,21 @@
 <article>
   <p class="label-p">
     <label for="checkInterval">
-      Check posture every
-      <b>{$checkInterval}</b>
-      minutes
+      When out of focus, check posture every
+      <br />
+      <b><nobr>{intervalValues[$checkInterval].name}</nobr></b>
     </label>
   </p>
   <p>
     <Range
       id="checkInterval"
-      min="5"
-      max="30"
-      step="5"
+      min="0"
+      max={intervalValues.length - 1}
+      step="1"
       bind:value={$checkInterval} />
+  </p>
+  <p>
+    <small>When the window is focused, we check your posture multiple times a
+      second to give you an idea of how it&nbsp;works</small>
   </p>
 </article>
