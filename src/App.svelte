@@ -34,10 +34,12 @@
   lightningStatusStore.subscribe(status => {
     let resStr = "Your lightning is great!";
 
-    resStr = status;
-    //if (status === 'bad') {
-    //  resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
-    //}
+    if (status === 'bad') {
+      resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
+    }
+    if (status === 'good') {
+      resStr = `Your lighting is OK, however some extra light will not hurt!`
+    }
 
     lightningStatusString = resStr;
   })
