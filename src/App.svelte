@@ -4,7 +4,7 @@
   import { getVideoInputs, setupCamera, stopVideoCapture } from "./webcam";
   import { CustomPoseNet } from "./net";
   import { calculatePoseInRealTime } from "./pose";
-  import { bodyStatusStore } from "./store/pose";
+  import { bodyStatusStore, lightningStatusStore } from "./store/pose";
   import Settings from "./components/Settings.svelte";
   import Section from "./components/layout/Section.svelte";
   import isFocused from "./store/isFocused";
@@ -18,6 +18,7 @@
   let outputEl;
 
   let bodyStatusString = "";
+  let lightningStatusString = "";
   let monitorDistance = 0;
 
   bodyStatusStore.subscribe((status) => {
@@ -30,6 +31,19 @@
     monitorDistance = status.monitorDistance;
     bodyStatusString = resStr;
   });
+
+  lightningStatusStore.subscribe(status => {
+    let resStr = "Your lightning is great!";
+
+    if (status === 'bad') {
+      resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
+    }
+    if (status === 'good') {
+      resStr = `Your lighting is OK, however some extra light will not hurt!`
+    }
+
+    lightningStatusString = resStr;
+  })
 
   async function loadVideo(label) {
     error = "";
@@ -118,6 +132,8 @@
     </Section>
     <Section title="Status">
       <p>{bodyStatusString}</p>
+      <p></p>
+      <p>{lightningStatusString}</p>
       <p></p>
       <p> Distance to the monitor: {window.parseInt(10 * monitorDistance) / 10} cm</p>
     </Section>

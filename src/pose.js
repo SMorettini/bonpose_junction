@@ -1,4 +1,4 @@
-import { bodyPartMapStore, bodyStatusStore } from './store/pose';
+import { bodyPartMapStore, bodyStatusStore, lightningStatusStore } from './store/pose';
 import { drawLine, drawPoint } from './draw';
 import {checkInterval, intervalValues} from './store/settings/checkInterval';
 import isFocused from './store/isFocused';
@@ -81,6 +81,82 @@ function calculateBodyStatus(bodyPartMap, input) {
 }
 
 
+function calculateLightningStatus(canvasCtx, bodyPartMap, width, height) {
+  let leftEarPos = bodyPartMap["leftEar"];
+  let rightEarPos = bodyPartMap["rightEar"];
+  let leftShoulderPos = bodyPartMap["leftShoulder"];
+  let rightShoulderPos = bodyPartMap["rightShoulder"];
+
+  if (leftEarPos === -1 || rightEarPos === -1) {
+    return true
+  }
+
+  // const faceHeight = Math.abs(leftEarPos.y - rightEarPos.y);
+  const faceHeight = rightEarPos.x - leftEarPos.x; // Face's height is at least face's width
+  const faceCenterY = (leftEarPos.y + rightEarPos.y) / 2;
+
+  // // calculate mean face intensity
+  // let facePixels = 0;
+  // let facePixelsIntensityCum = 0;
+  // for (let i = leftEarPos.x; i <= rightEarPos.x; i++) {
+  //   for (let j = faceCenterY - faceHeight / 2.0; j < faceCenterY + faceHeight / 2.0; j++) {
+  //     const pixel = canvasCtx.getImageData(i, j, 1, 1);
+  //     const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+  //
+  //     facePixelsIntensityCum += intensity;
+  //     facePixels++;
+  //   }
+  // }
+  // let facePixelsIntensity = facePixelsIntensityCum / facePixels;
+  //
+  // // calculate mean background intensity
+  // let backgroundPixels = 0;
+  // let backgroundPixelsIntensityCum = 0;
+  // for (let i = 0; i <= width; i+=10) {
+  //   if (i > leftShoulderPos.x && i < rightShoulderPos.x)
+  //     continue;
+  //   for (let j = 0; j < height; j+=10) {
+  //     if (j < faceCenterY + faceHeight / 2.0)
+  //       continue;
+  //     const pixel = canvasCtx.getImageData(i, j, 1, 1);
+  //     const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+  //
+  //     backgroundPixelsIntensityCum += intensity;
+  //     backgroundPixels++;
+  //   }
+  // }
+  // backgroundPixelsIntensityCum -= facePixelsIntensityCum; // Background is everything on image except of face
+  // const backgroundPixelsIntensity = backgroundPixelsIntensityCum / backgroundPixels;
+
+  // return "back " + backgroundPixelsIntensity.toString() + "  front " + facePixelsIntensity.toString(); // for debug
+
+  // return facePixelsIntensity <= 1.05 * backgroundPixelsIntensity ? 'good' : 'bad' // Initial idea
+
+  // calculate mean image intensity
+  let imagePixels = 0;
+  let imagePixelsIntensityCum = 0;
+  for (let i = 0; i <= width; i+=10) { // step === 10 is to make code faster
+    for (let j = 0; j < height; j+=10) {
+      const pixel = canvasCtx.getImageData(i, j, 1, 1);
+      const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+
+      imagePixelsIntensityCum += intensity;
+      imagePixels++;
+    }
+  }
+  const imagePixelsIntensity = imagePixelsIntensityCum / imagePixels;
+  // return imagePixelsIntensity.toString()
+  if (imagePixelsIntensity < 90)
+    return "bad";
+  else
+    if (imagePixelsIntensity < 120)
+      return "good";
+    else
+      if (imagePixelsIntensity >= 120)
+        return "perfect"
+
+
+}
 /**
  * @param {CustomPoseNet} net
  * @param {HTMLVideoElement|HTMLCanvasElement} input
@@ -98,6 +174,12 @@ export function calculatePoseInRealTime(net,
   isFocused.subscribe(val => {
     focused = val;
   })
+
+  const inputCanvas = document.createElement('canvas');
+  inputCanvas.height = input.videoHeight;
+  inputCanvas.width = input.videoWidth;
+  const inputCtx = inputCanvas.getContext('2d');
+
 
   const ctx = output.getContext('2d');
   const flip = net.flipHorizontal;
@@ -166,6 +248,10 @@ export function calculatePoseInRealTime(net,
       bodyPartMapStore.set(bodyPartMap);
       const bodyStatus = calculateBodyStatus(bodyPartMap, input);
       bodyStatusStore.set(bodyStatus);
+      inputCtx.drawImage(input, 0, 0, inputCanvas.width, inputCanvas.height);
+      const lightningStatus = calculateLightningStatus(inputCtx, bodyPartMap, inputCanvas.width, inputCanvas.height);
+      // const lightningStatus = "good";
+      lightningStatusStore.set(lightningStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
         drawPoint(ctx, bodyPartMap[bodyPart]["y"], bodyPartMap[bodyPart]["x"]);
