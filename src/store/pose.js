@@ -7,3 +7,5 @@ export const bodyStatusStore = writable({
   eyesAngle: null,
   monitorDistance: null,
 });
+
+export const lightningStatusStore = writable({});

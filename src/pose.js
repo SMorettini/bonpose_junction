@@ -1,4 +1,4 @@
-import { bodyPartMapStore, bodyStatusStore } from './store/pose';
+import { bodyPartMapStore, bodyStatusStore, lightningStatusStore } from './store/pose';
 import { drawLine, drawPoint } from './draw';
 
 /**
@@ -79,6 +79,50 @@ function calculateBodyStatus(bodyPartMap, input) {
 }
 
 
+function calculateLightningStatus(canvas, bodyPartMap) {
+  let leftEarPos = bodyPartMap["leftEar"];
+  let rightEarPos = bodyPartMap["rightEar"];
+  if (leftEarPos === -1 || rightEarPos === -1) {
+    return true
+  }
+
+  const canvasCtx = canvas.getContext("2d");
+  const faceHeight = Math.abs(leftEarPos.y - rightEarPos.y);
+
+  // calculate mean face intensity
+  let facePixels = 0;
+  let facePixelsIntensityCum = 0;
+  for (let i = leftEarPos.x; i <= rightEarPos.x; i++) {
+    for (let j = leftEarPos.y - faceHeight * 2.0 / 3.0; j < leftEarPos.y + faceHeight / 3.0; j++) {
+      const pixel = canvasCtx.getImageData(i, j, 1, 1);
+      const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+
+      facePixelsIntensityCum += intensity;
+      facePixels++;
+    }
+  }
+  let facePixelsIntensity = facePixelsIntensityCum / facePixels;
+
+  // // calculate mean background intensity
+  // let backgroundPixels = 0;
+  // let backgroundPixelsIntensityCum = 0;
+  // for (let i = 0; i <= canvas.width; i+=10) {
+  //   for (let j = 0; j < canvas.height; j+=10) {
+  //     const pixel = canvasCtx.getImageData(i, j, 1, 1);
+  //     const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+  //
+  //     backgroundPixelsIntensityCum += intensity;
+  //     backgroundPixels++;
+  //   }
+  // }
+  // backgroundPixelsIntensityCum -= facePixelsIntensityCum; // Background is everything on image except of face
+  // let backgroundPixelsIntensity = backgroundPixelsIntensityCum / backgroundPixels;
+
+  return facePixelsIntensity.toString()
+  // return facePixelsIntensity <= 1.05 * backgroundPixelsIntensity ? 'good' : 'bad'
+  // return facePixelsIntensity > 256 ? 'good' : 'bad'
+
+}
 /**
  * @param {CustomPoseNet} net
  * @param {HTMLVideoElement|HTMLCanvasElement} input
@@ -87,6 +131,12 @@ function calculateBodyStatus(bodyPartMap, input) {
 export function calculatePoseInRealTime(net,
                                         input,
                                         output) {
+
+  const inputCanvas = document.createElement('canvas');
+  inputCanvas.height = input.videoHeight;
+  inputCanvas.width = input.videoWidth;
+  const inputCtx = inputCanvas.getContext('2d');
+  inputCtx.drawImage(input, 0, 0, inputCanvas.width, inputCanvas.height);
 
   const ctx = output.getContext('2d');
   const flip = net.flipHorizontal;
@@ -141,6 +191,9 @@ export function calculatePoseInRealTime(net,
       bodyPartMapStore.set(bodyPartMap);
       const bodyStatus = calculateBodyStatus(bodyPartMap, input);
       bodyStatusStore.set(bodyStatus);
+      const lightningStatus = calculateLightningStatus(inputCanvas, bodyPartMap);
+      // const lightningStatus = "good";
+      lightningStatusStore.set(lightningStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
         drawPoint(ctx, bodyPartMap[bodyPart]["y"], bodyPartMap[bodyPart]["x"]);
