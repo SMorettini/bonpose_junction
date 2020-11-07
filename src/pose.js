@@ -1,5 +1,7 @@
 import { bodyPartMapStore, bodyStatusStore } from './store/pose';
 import { drawLine, drawPoint } from './draw';
+import checkInterval from './store/settings/checkInterval';
+import isFocused from './store/isFocused';
 
 /**
  * Pose
@@ -69,6 +71,15 @@ function calculateBodyStatus(bodyPartMap) {
 export function calculatePoseInRealTime(net,
                                         input,
                                         output) {
+  let checkIntervalInMs = 0;
+  checkInterval.subscribe(val => {
+    checkIntervalInMs = val * 60 * 1000; // min to ms
+  })
+
+  let focused = true;
+  isFocused.subscribe(val => {
+    focused = val;
+  })
 
   const ctx = output.getContext('2d');
   const flip = net.flipHorizontal;
@@ -86,7 +97,21 @@ export function calculatePoseInRealTime(net,
 
   var prediction_history = [];
 
-  async function drawFrame() {
+  let lastCheckTimestamp;
+
+  async function drawFrame(timestamp) {
+    if (!focused) {
+      if (!lastCheckTimestamp) {
+        lastCheckTimestamp = timestamp;
+      }
+      const elapsed = timestamp - lastCheckTimestamp;
+      if (elapsed < checkIntervalInMs) {
+        return requestAnimationFrame(drawFrame);
+      } else {
+        lastCheckTimestamp = timestamp;
+      }
+    }
+
     const pose = await net.estimatePose(input);
 
     ctx.clearRect(0, 0, input.width, input.height);
@@ -102,11 +127,11 @@ export function calculatePoseInRealTime(net,
       prediction_history.push(currentBodyPartMap)
       if (prediction_history.length > 8) {
         prediction_history.shift();
-      } 
+      }
 
       var bodyPartMap = {};
       var marker;
-      for (marker in prediction_history[0]) { 
+      for (marker in prediction_history[0]) {
         bodyPartMap[marker] = {};
         bodyPartMap[marker]["x"] = 0;
         bodyPartMap[marker]["y"] = 0;
@@ -137,10 +162,11 @@ export function calculatePoseInRealTime(net,
         bodyPartMap['leftShoulder']["y"],
         bodyPartMap['leftShoulder']["x"],
       );
+
     }
 
     requestAnimationFrame(drawFrame);
   }
 
-  drawFrame();
+  requestAnimationFrame(drawFrame);
 }

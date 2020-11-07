@@ -7,6 +7,7 @@
   import { bodyStatusStore } from "./store/pose";
   import Settings from "./components/Settings.svelte";
   import Section from "./components/layout/Section.svelte";
+  import isFocused from "./store/isFocused";
 
   let error = "";
   let net;
@@ -99,6 +100,10 @@
     color: orangered;
   }
 </style>
+
+<svelte:window
+  on:blur={() => isFocused.set(false)}
+  on:focus={() => isFocused.set(true)} />
 
 <main>
   <h1>BonPose</h1>
