@@ -5,4 +5,5 @@ export const bodyPartMapStore = writable({});
 export const bodyStatusStore = writable({
   shouldersAngle: null,
   eyesAngle: null,
+  monitorDistance: null,
 });

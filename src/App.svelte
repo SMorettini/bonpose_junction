@@ -18,14 +18,16 @@
   let outputEl;
 
   let bodyStatusString = "";
+  let monitorDistance = 0;
 
   bodyStatusStore.subscribe((status) => {
     let resStr = "Your posture is great!";
-
+    
     if (status.shouldersAngle === "bad" || status.eyesAngle === "bad") {
       resStr = `Hey! Your shoulder angle is ${status.shouldersAngle} and your head position is ${status.eyesAngle}!`;
     }
 
+    monitorDistance = status.monitorDistance;
     bodyStatusString = resStr;
   });
 
@@ -116,6 +118,8 @@
     </Section>
     <Section title="Status">
       <p>{bodyStatusString}</p>
+      <p></p>
+      <p> Distance to the monitor: {window.parseInt(10 * monitorDistance) / 10} cm</p>
     </Section>
     <Section title="Settings">
       <Settings />
