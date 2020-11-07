@@ -1,19 +1,12 @@
 <script>
-  import { createSettingsStore } from "../store/settings";
-
-  const checkInterval = createSettingsStore(
-    "checkInterval",
-    15,
-    (x) => parseInt(x, 10),
-    (x) => x.toString()
-  );
+  import checkInterval from "../store/settings/checkInterval";
 
   import Range from "./input/Range.svelte";
 </script>
 
 <style>
   .label-p {
-    margin-bottom: .75rem;
+    margin-bottom: 0.75rem;
   }
 </style>
 
