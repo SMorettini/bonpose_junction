@@ -72,9 +72,19 @@ export function calculatePoseInRealTime(net,
 
   const ctx = output.getContext('2d');
   const flip = net.flipHorizontal;
+  const marker_list = [
+    'leftEar',
+    'rightEar',
+    'leftEye',
+    'rightEye',
+    'leftShoulder',
+    'rightShoulder',
+  ];
 
   output.width = input.width;
   output.height = input.height;
+
+  var prediction_history = [];
 
   async function drawFrame() {
     const pose = await net.estimatePose(input);
@@ -87,27 +97,45 @@ export function calculatePoseInRealTime(net,
     ctx.restore();
 
     if (pose.score >= 0.15) {
-      const bodyPartMap = extractBodyPartPositions(pose, [
-        'leftEar',
-        'rightEar',
-        'leftEye',
-        'rightEye',
-        'leftShoulder',
-        'rightShoulder',
-      ]);
+      const currentBodyPartMap = extractBodyPartPositions(pose, marker_list);
+
+      prediction_history.push(currentBodyPartMap)
+      if (prediction_history.length > 8) {
+        prediction_history.shift();
+      } 
+
+      var bodyPartMap = {};
+      var marker;
+      for (marker in prediction_history[0]) { 
+        bodyPartMap[marker] = {};
+        bodyPartMap[marker]["x"] = 0;
+        bodyPartMap[marker]["y"] = 0;
+
+        for (var i = 0; i < prediction_history.length; i++) {
+          bodyPartMap[marker]["x"] += prediction_history[i][marker].x;
+          bodyPartMap[marker]["y"] += prediction_history[i][marker].y;
+        }
+
+        bodyPartMap[marker]["x"] /= prediction_history.length;
+        bodyPartMap[marker]["y"] /= prediction_history.length;
+      }
+
+      console.log(prediction_history);
+      console.log(bodyPartMap);
+
       bodyPartMapStore.set(bodyPartMap);
       const bodyStatus = calculateBodyStatus(bodyPartMap);
       bodyStatusStore.set(bodyStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
-        drawPoint(ctx, bodyPartMap[bodyPart].y, bodyPartMap[bodyPart].x);
+        drawPoint(ctx, bodyPartMap[bodyPart]["y"], bodyPartMap[bodyPart]["x"]);
       });
 
       drawLine(ctx,
-        bodyPartMap['rightShoulder'].y,
-        bodyPartMap['rightShoulder'].x,
-        bodyPartMap['leftShoulder'].y,
-        bodyPartMap['leftShoulder'].x,
+        bodyPartMap['rightShoulder']["y"],
+        bodyPartMap['rightShoulder']["x"],
+        bodyPartMap['leftShoulder']["y"],
+        bodyPartMap['leftShoulder']["x"],
       );
     }
 
