@@ -48,18 +48,32 @@ function checkDiffBetweenPoints(point1 = null, point2 = null, threshold, toCheck
 
 /**
  *
- * @param {Vector2D} point1
- * @param {Vector2D} point2
+ * @param {dict} bodyPartMap
  * @param {number} width
  * @param {"x"|"y"} toCheck
  * @return {number}
  */
-function computeMonitorDistance(point1 = null, point2 = null, width, toCheck = 'x') {
-  if (point1 && point2) {
-    // 2473000 is a magic constant
-    return 2473000 / Math.abs(point1[toCheck] - point2[toCheck]) / width;
+function computeMonitorDistance(bodyPartMap, width, toCheck = 'x') {
+  var dist = null;
+
+  // First order
+  if (bodyPartMap.leftEye && bodyPartMap.rightEye) {
+    // 6 is a magic constant
+    const eye_dist = Math.abs(bodyPartMap.leftEye[toCheck] - bodyPartMap.rightEye[toCheck]);
+    dist = 6 * width / eye_dist ;
+
+    // Second order
+    if (bodyPartMap.leftEar && bodyPartMap.rightEar) {
+      const ear_center = (bodyPartMap.leftEar[toCheck] + bodyPartMap.rightEar[toCheck]) / 2;
+      const eye_center = (bodyPartMap.leftEye[toCheck] + bodyPartMap.rightEye[toCheck]) / 2;
+      const alpha = Math.asin(Math.abs(ear_center - eye_center) / dist);
+      if (Number.isNaN(alpha)) {
+        return dist;
+      }
+      dist = dist * Math.cos(alpha);
+    }
   }
-  return null;
+  return dist;
 }
 
 /**
@@ -75,7 +89,7 @@ function calculateBodyStatus(bodyPartMap, input) {
 
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
-  result.monitorDistance = computeMonitorDistance(bodyPartMap.leftEye, bodyPartMap.rightEye, input.width);
+  result.monitorDistance = computeMonitorDistance(bodyPartMap, input.width);
 
   return result
 }
