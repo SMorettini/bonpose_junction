@@ -20,11 +20,7 @@
   let bodyStatusString = "";
   let lightningStatusString = "";
   let monitorDistance = 0;
-<<<<<<< Updated upstream
-  let monitorPositionString = "";
-=======
   let viewAngle = 0;
->>>>>>> Stashed changes
 
   bodyStatusStore.subscribe((status) => {
     let resStr = "Your posture is great!";
@@ -37,14 +33,14 @@
     viewAngle = status.viewAngle;
     bodyStatusString = resStr;
 
-    monitorPositionString = "Your screen is positioned correctly!"
-    if (status.monitorPosition > 0.2) {
-      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
-      monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
-    } else if (status.monitorPosition < -0.2) {
-      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
-      monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
-    }
+    // monitorPositionString = "Your screen is positioned correctly!"
+    // if (status.monitorPosition > 0.2) {
+    //   // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+    //   monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
+    // } else if (status.monitorPosition < -0.2) {
+    //   // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+    //   monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
+    // }
   });
 
   lightningStatusStore.subscribe(status => {
@@ -149,8 +145,6 @@
       <p>{bodyStatusString}</p>
       <p></p>
       <p>{lightningStatusString}</p>
-      <p></p>
-      <p>{monitorPositionString}</p>
       <p></p>
       <p> Distance to the monitor: {window.parseInt(monitorDistance)} cm</p>
       <p> View angle: {window.parseInt(viewAngle)} degrees</p>

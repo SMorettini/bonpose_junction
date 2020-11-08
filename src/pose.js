@@ -72,30 +72,15 @@ function computeMonitorDistance(bodyPartMap, width) {
     dist = magic_const * width / eye_dist ;
   }
   return dist;
-
-  /**
- *
- * @param {Vector2D} leftEye
- * @param {Vector2D} rightEye
- * @param {number} height
- * @return {number}
- */
-}function computeMonitorPosition(leftEye = null, rightEye = null, height) {
-  if (leftEye && rightEye) {
-    let eyeCenterY = (leftEye.y + rightEye.y) / 2;
-    return ((eyeCenterY - height / 2) / height).toString(); // Normalized distance to center of screen
-  }
-  return null;
 }
 
 /**
  *
  * @param {dict} bodyPartMap
  * @param {number} height
- * @param {number} dist
  * @return {number}
  */
-function computeViewAngle(bodyPartMap, height, dist) {
+function computeViewAngle(bodyPartMap, height) {
   var alpha = null;
 
   // First order
@@ -123,8 +108,7 @@ function calculateBodyStatus(bodyPartMap, input) {
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
   result.monitorDistance = computeMonitorDistance(bodyPartMap, input.width);
-  result.viewAngle = computeViewAngle(bodyPartMap, input.height, result.monitorDistance);z 
-  result.monitorPosition = computeMonitorPosition(bodyPartMap.leftEye, bodyPartMap.rightEye, input.height);
+  result.viewAngle = computeViewAngle(bodyPartMap, input.height, result.monitorDistance);
 
   return result
 }
@@ -206,6 +190,8 @@ function calculateLightningStatus(canvasCtx, bodyPartMap, width, height) {
 
 
 }
+
+
 /**
  * @param {CustomPoseNet} net
  * @param {HTMLVideoElement|HTMLCanvasElement} input
