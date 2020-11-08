@@ -48,32 +48,49 @@ function checkDiffBetweenPoints(point1 = null, point2 = null, threshold, toCheck
 
 /**
  *
- * @param {Vector2D} point1
- * @param {Vector2D} point2
+ * @param {dict} bodyPartMap
  * @param {number} width
- * @param {"x"|"y"} toCheck
  * @return {number}
  */
-function computeMonitorDistance(point1 = null, point2 = null, width, toCheck = 'x') {
-  if (point1 && point2) {
-    // 2473000 is a magic constant
-    return 2473000 / Math.abs(point1[toCheck] - point2[toCheck]) / width;
-  }
-  return null;
+function computeMonitorDistance(bodyPartMap, width) {
+  var dist = null;
 
-  /**
+  // First order
+  if (bodyPartMap.leftEye && bodyPartMap.rightEye) {
+    var eye_dist = Math.abs(bodyPartMap.leftEye['x'] - bodyPartMap.rightEye['x']);
+
+    // Second order
+    if (bodyPartMap.leftEar && bodyPartMap.rightEar) {
+      const ear_center = (bodyPartMap.leftEar['x'] + bodyPartMap.rightEar['x']) / 2;
+      const eye_center = (bodyPartMap.leftEye['x'] + bodyPartMap.rightEye['x']) / 2;
+      const diff = 0.5 * Math.abs(ear_center - eye_center);
+
+      eye_dist += diff;
+    }
+
+    const magic_const = 6;
+    dist = magic_const * width / eye_dist ;
+  }
+  return dist;
+}
+
+/**
  *
- * @param {Vector2D} leftEye
- * @param {Vector2D} rightEye
+ * @param {dict} bodyPartMap
  * @param {number} height
  * @return {number}
  */
-}function computeMonitorPosition(leftEye = null, rightEye = null, height) {
-  if (leftEye && rightEye) {
-    let eyeCenterY = (leftEye.y + rightEye.y) / 2;
-    return ((eyeCenterY - height / 2) / height).toString(); // Normalized distance to center of screen
+function computeViewAngle(bodyPartMap, height) {
+  var alpha = null;
+
+  // First order
+  if (bodyPartMap.leftEye && bodyPartMap.rightEye) {
+    const eye_center = (bodyPartMap.leftEye['y'] + bodyPartMap.rightEye['y']) / 2;
+
+    const camera_view_angle = 70;
+    alpha = 90 + 180 * Math.asin(Math.sin(camera_view_angle / 2) * (2 * eye_center / height - 1)) / Math.PI;
   }
-  return null;
+  return alpha;
 }
 
 /**
@@ -90,8 +107,8 @@ function calculateBodyStatus(bodyPartMap, input) {
 
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
-  result.monitorDistance = computeMonitorDistance(bodyPartMap.leftEye, bodyPartMap.rightEye, input.width);
-  result.monitorPosition = computeMonitorPosition(bodyPartMap.leftEye, bodyPartMap.rightEye, input.height);
+  result.monitorDistance = computeMonitorDistance(bodyPartMap, input.width);
+  result.viewAngle = computeViewAngle(bodyPartMap, input.height, result.monitorDistance);
 
   return result
 }
@@ -161,18 +178,24 @@ function calculateLightningStatus(canvasCtx, bodyPartMap, width, height) {
     }
   }
   const imagePixelsIntensity = imagePixelsIntensityCum / imagePixels;
+
+  var ret = {
+    status: null
+  }
   // return imagePixelsIntensity.toString()
   if (imagePixelsIntensity < 90)
-    return "bad";
+    ret.status = "bad"
   else
     if (imagePixelsIntensity < 120)
-      return "good";
+      ret.status = "good";
     else
       if (imagePixelsIntensity >= 120)
-        return "perfect"
+        ret.status = "perfect";
 
-
+  return ret;
 }
+
+
 /**
  * @param {CustomPoseNet} net
  * @param {HTMLVideoElement|HTMLCanvasElement} input
@@ -249,16 +272,16 @@ export function calculatePoseInRealTime(net,
       var marker;
       for (marker in prediction_history[0]) {
         bodyPartMap[marker] = {};
-        bodyPartMap[marker]["x"] = 0;
-        bodyPartMap[marker]["y"] = 0;
+        bodyPartMap[marker]['x'] = 0;
+        bodyPartMap[marker]['y'] = 0;
 
         for (var i = 0; i < prediction_history.length; i++) {
-          bodyPartMap[marker]["x"] += prediction_history[i][marker].x;
-          bodyPartMap[marker]["y"] += prediction_history[i][marker].y;
+          bodyPartMap[marker]['x'] += prediction_history[i][marker].x;
+          bodyPartMap[marker]['y'] += prediction_history[i][marker].y;
         }
 
-        bodyPartMap[marker]["x"] /= prediction_history.length;
-        bodyPartMap[marker]["y"] /= prediction_history.length;
+        bodyPartMap[marker]['x'] /= prediction_history.length;
+        bodyPartMap[marker]['y'] /= prediction_history.length;
       }
 
       bodyPartMapStore.set(bodyPartMap);
@@ -269,14 +292,14 @@ export function calculatePoseInRealTime(net,
       lightningStatusStore.set(lightningStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
-        drawPoint(ctx, bodyPartMap[bodyPart]["y"], bodyPartMap[bodyPart]["x"]);
+        drawPoint(ctx, bodyPartMap[bodyPart]['y'], bodyPartMap[bodyPart]['x']);
       });
 
       drawLine(ctx,
-        bodyPartMap['rightShoulder']["y"],
-        bodyPartMap['rightShoulder']["x"],
-        bodyPartMap['leftShoulder']["y"],
-        bodyPartMap['leftShoulder']["x"],
+        bodyPartMap['rightShoulder']['y'],
+        bodyPartMap['rightShoulder']['x'],
+        bodyPartMap['leftShoulder']['y'],
+        bodyPartMap['leftShoulder']['x'],
       );
     } else {
       bodyStatusStore.set({

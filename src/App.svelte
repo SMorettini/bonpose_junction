@@ -49,29 +49,28 @@
   let outputEl;
 
   let bodyStatusString = "";
+  let shouldersAngle = "";
   let lightningStatusString = "";
   let monitorDistance = 0;
-  let monitorPositionString = "";
+  let viewAngle = 0;
 
   bodyStatusStore.subscribe((status) => {
     let resStr = "Your posture is great!";
     
-    if (status.shouldersAngle === "bad" || status.eyesAngle === "bad") {
-      resStr = `Hey! Your shoulder angle is ${status.shouldersAngle} and your head position is ${status.eyesAngle}!`;
-    }
-
+    shouldersAngle = status.shouldersAngle;
     monitorDistance = status.monitorDistance;
+    viewAngle = status.viewAngle;
     bodyStatusString = resStr;
 
-    monitorPositionString = "Your screen is positioned correctly!"
-    if (status.monitorPosition > 0.2) {
-      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
-      monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
+    // monitorPositionString = "Your screen is positioned correctly!"
+    // if (status.monitorPosition > 0.2) {
+    //   // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+    //   monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
+    // } else if (status.monitorPosition < -0.2) {
+    //   // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+    //   monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
+    // }
 
-    } else if (status.monitorPosition < -0.2) {
-      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
-      monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
-    }
   });
 
 
@@ -79,14 +78,14 @@
   lightningStatusStore.subscribe(status => {
     let resStr = "Your lightning is great!";
 
-    if (status === 'bad') {
-      resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
-    }
-    if (status === 'good') {
-      resStr = `Your lighting is OK, however some extra light will not hurt!`
-    }
+    // if (status === 'bad') {
+    //   resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
+    // }
+    // if (status === 'good') {
+    //   resStr = `Your lighting is OK, however some extra light will not hurt!`
+    // }
 
-    lightningStatusString = resStr;
+    lightningStatusString = status.status;
   })
 
   async function loadVideo(label) {
@@ -191,13 +190,10 @@
     </Section>
     <div class="column">
     <Section title="Status">
-      <p>{bodyStatusString}</p>
-      <p></p>
-      <p>{lightningStatusString}</p>
-      <p></p>
-      <p>{monitorPositionString}</p>
-      <p></p>
-      <p> Distance to the monitor: {window.parseInt(10 * monitorDistance) / 10} cm</p>
+      <p> Shoulders Position:        {shouldersAngle}</p>
+      <p> Distance to the monitor:   {window.parseInt(monitorDistance)} cm</p>
+      <p> View angle:                {window.parseInt(viewAngle)} degrees</p>
+      <p> Lightning conditions:      {lightningStatusString}</p>
     </Section>
 
     <Section title="Settings">
