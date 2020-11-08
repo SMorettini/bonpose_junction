@@ -9,6 +9,46 @@
   import Section from "./components/layout/Section.svelte";
   import isFocused from "./store/isFocused";
 
+  var seconds=0, minutes=0, hours=0;
+  var secondsToPlot, minutesToPlot, hoursToPlot;
+  var counter;
+  var stop, start;
+  var counting = false;
+
+  window.onload = function () {
+    counter = document.getElementById('counter')
+    counting = true;
+    timer();
+  }
+
+  function timer() {
+    if (seconds >= 60) {
+        minutes++;
+        seconds = 0;
+    }
+    if (minutes >= 60) {
+        hours++;
+        minutes = 0;
+    }
+    if (hours < 10)
+      hoursToPlot = "0" + hours;
+    else
+      hoursToPlot = hours;
+    if (minutes < 10)
+      minutesToPlot = "0" + minutes;
+    else
+      minutesToPlot = minutes;
+    if (seconds < 10)
+      secondsToPlot = "0" + seconds;
+    else
+      secondsToPlot = seconds;
+    counter.innerHTML = hoursToPlot + "h" + minutesToPlot + "m" + secondsToPlot + "s";
+    if (counting) {
+        seconds++;
+        setTimeout(timer, 1000);
+    }
+  }
+
   let error = "";
   let net;
   let camera;
@@ -137,7 +177,7 @@
     td, th {
       border: 1px solid #f0f0f0;
       text-align: left;
-      padding: 1px 8px;
+      padding: 2px 8px;
     }
 
 </style>
@@ -181,27 +221,27 @@
       <tr>
         <td>1</td>
         <td>Artem Lukoianov</td>
-        <td>13h42m</td>
+        <td>13h42m11s</td>
       </tr>
       <tr>
         <td>2</td>
         <td>Nikita Karamov</td>
-        <td>13h30m</td>
+        <td>13h30m20s</td>
       </tr>
       <tr>
         <td>3</td>
         <td>Anna Valiullina</td>
-        <td>10h44m</td>
+        <td>10h44m32s</td>
       </tr>
       <tr>
         <td>4</td>
         <td>Oganes Manasian</td>
-        <td>10h22m</td>
+        <td>10h22m30s</td>
       </tr>
       <tr>
         <td><b>5</b></td>
         <td><b>Guest</b></td>
-        <td><b>{0}h{0}m</b></td>
+        <td><b id="counter"></b></td>
       </tr>
     </table>
     </Section>
