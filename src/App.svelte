@@ -9,6 +9,37 @@
   import Section from "./components/layout/Section.svelte";
   import isFocused from "./store/isFocused";
 
+  var seconds=0, minutes=0, hours=0;
+  var secondsToPlot, minutesToPlot, hoursToPlot;
+  var counter;
+  var stop, start;
+  var counting = false;
+
+  window.onload = function () {
+    counter = document.getElementById('counter')
+    counting = true;
+    timer();
+  }
+
+  function timer() {
+    if (seconds >= 60) {
+        minutes++;
+        seconds = 0;
+    }
+    if (minutes >= 60) {
+        hours++;
+        minutes = 0;
+    }
+    hoursToPlot = (hours < 10) ? "0" + hours : hours;
+    minutesToPlot = (minutes < 10) ? "0" + minutes : minutes;
+    secondsToPlot = (seconds < 10) ? "0" + seconds : seconds;
+    counter.innerHTML = hoursToPlot + "h" + minutesToPlot + "m" + secondsToPlot + "s";
+    if (counting) {
+        seconds++;
+        setTimeout(timer, 1000);
+    }
+  }
+
   let error = "";
   let net;
   let camera;
@@ -39,7 +70,10 @@
     //   // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
     //   monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
     // }
+
   });
+
+
 
   lightningStatusStore.subscribe(status => {
     let resStr = "Your lightning is great!";
@@ -124,6 +158,21 @@
   .error {
     color: orangered;
   }
+
+  table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    td, th {
+      border: 1px solid #f0f0f0;
+      text-align: left;
+      padding: 2px 8px;
+    }
+
 </style>
 
 <svelte:window
@@ -139,14 +188,52 @@
       <canvas bind:this={outputEl} />
       <p class="error">{error || ''}</p>
     </Section>
+    <div class="column">
     <Section title="Status">
       <p> Shoulders Position:        {shouldersAngle}</p>
       <p> Distance to the monitor:   {window.parseInt(monitorDistance)} cm</p>
       <p> View angle:                {window.parseInt(viewAngle)} degrees</p>
       <p> Lightning conditions:      {lightningStatusString}</p>
     </Section>
+
     <Section title="Settings">
       <Settings />
+    </Section>
+    </div>
+    <Section title="Leaderboard">
+
+    <table>
+      <tr>
+        <th>№</th>
+        <th>Name</th>
+        <th>Study time</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Artem Lukoianov</td>
+        <td>13h42m11s</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Nikita Karamov</td>
+        <td>13h30m20s</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Anna Valiullina</td>
+        <td>10h44m32s</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Oganes Manasian</td>
+        <td>10h22m30s</td>
+      </tr>
+      <tr>
+        <td><b>5</b></td>
+        <td><b>Guest</b></td>
+        <td><b id="counter"></b></td>
+      </tr>
+    </table>
     </Section>
   </div>
 </main>
