@@ -4,7 +4,7 @@
   import { getVideoInputs, setupCamera, stopVideoCapture } from "./webcam";
   import { CustomPoseNet } from "./net";
   import { calculatePoseInRealTime } from "./pose";
-  import { bodyStatusStore } from "./store/pose";
+  import { bodyStatusStore, lightningStatusStore } from "./store/pose";
   import Settings from "./components/Settings.svelte";
   import Section from "./components/layout/Section.svelte";
   import isFocused from "./store/isFocused";
@@ -18,7 +18,13 @@
   let outputEl;
 
   let bodyStatusString = "";
+  let lightningStatusString = "";
   let monitorDistance = 0;
+<<<<<<< Updated upstream
+  let monitorPositionString = "";
+=======
+  let viewAngle = 0;
+>>>>>>> Stashed changes
 
   bodyStatusStore.subscribe((status) => {
     let resStr = "Your posture is great!";
@@ -28,8 +34,31 @@
     }
 
     monitorDistance = status.monitorDistance;
+    viewAngle = status.viewAngle;
     bodyStatusString = resStr;
+
+    monitorPositionString = "Your screen is positioned correctly!"
+    if (status.monitorPosition > 0.2) {
+      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+      monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
+    } else if (status.monitorPosition < -0.2) {
+      // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
+      monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
+    }
   });
+
+  lightningStatusStore.subscribe(status => {
+    let resStr = "Your lightning is great!";
+
+    if (status === 'bad') {
+      resStr = `Hey! Fix the lightning, your eyes are going to die soon!`
+    }
+    if (status === 'good') {
+      resStr = `Your lighting is OK, however some extra light will not hurt!`
+    }
+
+    lightningStatusString = resStr;
+  })
 
   async function loadVideo(label) {
     error = "";
@@ -119,7 +148,12 @@
     <Section title="Status">
       <p>{bodyStatusString}</p>
       <p></p>
-      <p> Distance to the monitor: {window.parseInt(10 * monitorDistance) / 10} cm</p>
+      <p>{lightningStatusString}</p>
+      <p></p>
+      <p>{monitorPositionString}</p>
+      <p></p>
+      <p> Distance to the monitor: {window.parseInt(monitorDistance)} cm</p>
+      <p> View angle: {window.parseInt(viewAngle)} degrees</p>
     </Section>
     <Section title="Settings">
       <Settings />

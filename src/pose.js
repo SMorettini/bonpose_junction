@@ -1,4 +1,4 @@
-import { bodyPartMapStore, bodyStatusStore } from './store/pose';
+import { bodyPartMapStore, bodyStatusStore, lightningStatusStore } from './store/pose';
 import { drawLine, drawPoint } from './draw';
 import {checkInterval, intervalValues} from './store/settings/checkInterval';
 import isFocused from './store/isFocused';
@@ -50,30 +50,62 @@ function checkDiffBetweenPoints(point1 = null, point2 = null, threshold, toCheck
  *
  * @param {dict} bodyPartMap
  * @param {number} width
- * @param {"x"|"y"} toCheck
  * @return {number}
  */
-function computeMonitorDistance(bodyPartMap, width, toCheck = 'x') {
+function computeMonitorDistance(bodyPartMap, width) {
   var dist = null;
 
   // First order
   if (bodyPartMap.leftEye && bodyPartMap.rightEye) {
-    // 6 is a magic constant
-    const eye_dist = Math.abs(bodyPartMap.leftEye[toCheck] - bodyPartMap.rightEye[toCheck]);
-    dist = 6 * width / eye_dist ;
+    var eye_dist = Math.abs(bodyPartMap.leftEye['x'] - bodyPartMap.rightEye['x']);
 
     // Second order
     if (bodyPartMap.leftEar && bodyPartMap.rightEar) {
-      const ear_center = (bodyPartMap.leftEar[toCheck] + bodyPartMap.rightEar[toCheck]) / 2;
-      const eye_center = (bodyPartMap.leftEye[toCheck] + bodyPartMap.rightEye[toCheck]) / 2;
-      const alpha = Math.asin(Math.abs(ear_center - eye_center) / dist);
-      if (Number.isNaN(alpha)) {
-        return dist;
-      }
-      dist = dist * Math.cos(alpha);
+      const ear_center = (bodyPartMap.leftEar['x'] + bodyPartMap.rightEar['x']) / 2;
+      const eye_center = (bodyPartMap.leftEye['x'] + bodyPartMap.rightEye['x']) / 2;
+      const diff = 0.5 * Math.abs(ear_center - eye_center);
+
+      eye_dist += diff;
     }
+
+    const magic_const = 6;
+    dist = magic_const * width / eye_dist ;
   }
   return dist;
+
+  /**
+ *
+ * @param {Vector2D} leftEye
+ * @param {Vector2D} rightEye
+ * @param {number} height
+ * @return {number}
+ */
+}function computeMonitorPosition(leftEye = null, rightEye = null, height) {
+  if (leftEye && rightEye) {
+    let eyeCenterY = (leftEye.y + rightEye.y) / 2;
+    return ((eyeCenterY - height / 2) / height).toString(); // Normalized distance to center of screen
+  }
+  return null;
+}
+
+/**
+ *
+ * @param {dict} bodyPartMap
+ * @param {number} height
+ * @param {number} dist
+ * @return {number}
+ */
+function computeViewAngle(bodyPartMap, height, dist) {
+  var alpha = null;
+
+  // First order
+  if (bodyPartMap.leftEye && bodyPartMap.rightEye) {
+    const eye_center = (bodyPartMap.leftEye['y'] + bodyPartMap.rightEye['y']) / 2;
+
+    const camera_view_angle = 70;
+    alpha = 90 + 180 * Math.asin(Math.sin(camera_view_angle / 2) * (2 * eye_center / height - 1)) / Math.PI;
+  }
+  return alpha;
 }
 
 /**
@@ -85,16 +117,95 @@ function calculateBodyStatus(bodyPartMap, input) {
     shouldersAngle: null,
     eyesAngle: null,
     monitorDistance: null,
+    monitorPosition: null,
   };
 
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
   result.monitorDistance = computeMonitorDistance(bodyPartMap, input.width);
+  result.viewAngle = computeViewAngle(bodyPartMap, input.height, result.monitorDistance);z 
+  result.monitorPosition = computeMonitorPosition(bodyPartMap.leftEye, bodyPartMap.rightEye, input.height);
 
   return result
 }
 
 
+function calculateLightningStatus(canvasCtx, bodyPartMap, width, height) {
+  let leftEarPos = bodyPartMap["leftEar"];
+  let rightEarPos = bodyPartMap["rightEar"];
+  let leftShoulderPos = bodyPartMap["leftShoulder"];
+  let rightShoulderPos = bodyPartMap["rightShoulder"];
+
+  if (leftEarPos === -1 || rightEarPos === -1) {
+    return true
+  }
+
+  // const faceHeight = Math.abs(leftEarPos.y - rightEarPos.y);
+  const faceHeight = rightEarPos.x - leftEarPos.x; // Face's height is at least face's width
+  const faceCenterY = (leftEarPos.y + rightEarPos.y) / 2;
+
+  // // calculate mean face intensity
+  // let facePixels = 0;
+  // let facePixelsIntensityCum = 0;
+  // for (let i = leftEarPos.x; i <= rightEarPos.x; i++) {
+  //   for (let j = faceCenterY - faceHeight / 2.0; j < faceCenterY + faceHeight / 2.0; j++) {
+  //     const pixel = canvasCtx.getImageData(i, j, 1, 1);
+  //     const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+  //
+  //     facePixelsIntensityCum += intensity;
+  //     facePixels++;
+  //   }
+  // }
+  // let facePixelsIntensity = facePixelsIntensityCum / facePixels;
+  //
+  // // calculate mean background intensity
+  // let backgroundPixels = 0;
+  // let backgroundPixelsIntensityCum = 0;
+  // for (let i = 0; i <= width; i+=10) {
+  //   if (i > leftShoulderPos.x && i < rightShoulderPos.x)
+  //     continue;
+  //   for (let j = 0; j < height; j+=10) {
+  //     if (j < faceCenterY + faceHeight / 2.0)
+  //       continue;
+  //     const pixel = canvasCtx.getImageData(i, j, 1, 1);
+  //     const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+  //
+  //     backgroundPixelsIntensityCum += intensity;
+  //     backgroundPixels++;
+  //   }
+  // }
+  // backgroundPixelsIntensityCum -= facePixelsIntensityCum; // Background is everything on image except of face
+  // const backgroundPixelsIntensity = backgroundPixelsIntensityCum / backgroundPixels;
+
+  // return "back " + backgroundPixelsIntensity.toString() + "  front " + facePixelsIntensity.toString(); // for debug
+
+  // return facePixelsIntensity <= 1.05 * backgroundPixelsIntensity ? 'good' : 'bad' // Initial idea
+
+  // calculate mean image intensity
+  let imagePixels = 0;
+  let imagePixelsIntensityCum = 0;
+  for (let i = 0; i <= width; i+=10) { // step === 10 is to make code faster
+    for (let j = 0; j < height; j+=10) {
+      const pixel = canvasCtx.getImageData(i, j, 1, 1);
+      const intensity = (pixel.data[0] + pixel.data[1] + pixel.data[2]) / 3;
+
+      imagePixelsIntensityCum += intensity;
+      imagePixels++;
+    }
+  }
+  const imagePixelsIntensity = imagePixelsIntensityCum / imagePixels;
+  // return imagePixelsIntensity.toString()
+  if (imagePixelsIntensity < 90)
+    return "bad";
+  else
+    if (imagePixelsIntensity < 120)
+      return "good";
+    else
+      if (imagePixelsIntensity >= 120)
+        return "perfect"
+
+
+}
 /**
  * @param {CustomPoseNet} net
  * @param {HTMLVideoElement|HTMLCanvasElement} input
@@ -112,6 +223,12 @@ export function calculatePoseInRealTime(net,
   isFocused.subscribe(val => {
     focused = val;
   })
+
+  const inputCanvas = document.createElement('canvas');
+  inputCanvas.height = input.videoHeight;
+  inputCanvas.width = input.videoWidth;
+  const inputCtx = inputCanvas.getContext('2d');
+
 
   const ctx = output.getContext('2d');
   const flip = net.flipHorizontal;
@@ -165,31 +282,34 @@ export function calculatePoseInRealTime(net,
       var marker;
       for (marker in prediction_history[0]) {
         bodyPartMap[marker] = {};
-        bodyPartMap[marker]["x"] = 0;
-        bodyPartMap[marker]["y"] = 0;
+        bodyPartMap[marker]['x'] = 0;
+        bodyPartMap[marker]['y'] = 0;
 
         for (var i = 0; i < prediction_history.length; i++) {
-          bodyPartMap[marker]["x"] += prediction_history[i][marker].x;
-          bodyPartMap[marker]["y"] += prediction_history[i][marker].y;
+          bodyPartMap[marker]['x'] += prediction_history[i][marker].x;
+          bodyPartMap[marker]['y'] += prediction_history[i][marker].y;
         }
 
-        bodyPartMap[marker]["x"] /= prediction_history.length;
-        bodyPartMap[marker]["y"] /= prediction_history.length;
+        bodyPartMap[marker]['x'] /= prediction_history.length;
+        bodyPartMap[marker]['y'] /= prediction_history.length;
       }
 
       bodyPartMapStore.set(bodyPartMap);
       const bodyStatus = calculateBodyStatus(bodyPartMap, input);
       bodyStatusStore.set(bodyStatus);
+      inputCtx.drawImage(input, 0, 0, inputCanvas.width, inputCanvas.height);
+      const lightningStatus = calculateLightningStatus(inputCtx, bodyPartMap, inputCanvas.width, inputCanvas.height);
+      lightningStatusStore.set(lightningStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {
-        drawPoint(ctx, bodyPartMap[bodyPart]["y"], bodyPartMap[bodyPart]["x"]);
+        drawPoint(ctx, bodyPartMap[bodyPart]['y'], bodyPartMap[bodyPart]['x']);
       });
 
       drawLine(ctx,
-        bodyPartMap['rightShoulder']["y"],
-        bodyPartMap['rightShoulder']["x"],
-        bodyPartMap['leftShoulder']["y"],
-        bodyPartMap['leftShoulder']["x"],
+        bodyPartMap['rightShoulder']['y'],
+        bodyPartMap['rightShoulder']['x'],
+        bodyPartMap['leftShoulder']['y'],
+        bodyPartMap['leftShoulder']['x'],
       );
     } else {
       bodyStatusStore.set({
