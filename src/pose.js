@@ -60,6 +60,20 @@ function computeMonitorDistance(point1 = null, point2 = null, width, toCheck = '
     return 2473000 / Math.abs(point1[toCheck] - point2[toCheck]) / width;
   }
   return null;
+
+  /**
+ *
+ * @param {Vector2D} leftEye
+ * @param {Vector2D} rightEye
+ * @param {number} height
+ * @return {number}
+ */
+}function computeMonitorPosition(leftEye = null, rightEye = null, height) {
+  if (leftEye && rightEye) {
+    let eyeCenterY = (leftEye.y + rightEye.y) / 2;
+    return ((eyeCenterY - height / 2) / height).toString(); // Normalized distance to center of screen
+  }
+  return null;
 }
 
 /**
@@ -71,11 +85,13 @@ function calculateBodyStatus(bodyPartMap, input) {
     shouldersAngle: null,
     eyesAngle: null,
     monitorDistance: null,
+    monitorPosition: null,
   };
 
   result.shouldersAngle = checkDiffBetweenPoints(bodyPartMap.leftShoulder, bodyPartMap.rightShoulder, 50);
   result.eyesAngle = checkDiffBetweenPoints(bodyPartMap.leftEye, bodyPartMap.rightEye, 120, 'x');
   result.monitorDistance = computeMonitorDistance(bodyPartMap.leftEye, bodyPartMap.rightEye, input.width);
+  result.monitorPosition = computeMonitorPosition(bodyPartMap.leftEye, bodyPartMap.rightEye, input.height);
 
   return result
 }
@@ -250,7 +266,6 @@ export function calculatePoseInRealTime(net,
       bodyStatusStore.set(bodyStatus);
       inputCtx.drawImage(input, 0, 0, inputCanvas.width, inputCanvas.height);
       const lightningStatus = calculateLightningStatus(inputCtx, bodyPartMap, inputCanvas.width, inputCanvas.height);
-      // const lightningStatus = "good";
       lightningStatusStore.set(lightningStatus);
 
       Object.keys(bodyPartMap).forEach(bodyPart => {

@@ -6,6 +6,7 @@ export const bodyStatusStore = writable({
   shouldersAngle: null,
   eyesAngle: null,
   monitorDistance: null,
+  monitorPosition: null, // Angle at which user is looking at the monitor
 });
 
 export const lightningStatusStore = writable({});
