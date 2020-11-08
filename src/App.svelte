@@ -125,6 +125,21 @@
   .error {
     color: orangered;
   }
+
+  table {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    td, th {
+      border: 1px solid #f0f0f0;
+      text-align: left;
+      padding: 1px 8px;
+    }
+
 </style>
 
 <svelte:window
@@ -140,6 +155,7 @@
       <canvas bind:this={outputEl} />
       <p class="error">{error || ''}</p>
     </Section>
+    <div class="column">
     <Section title="Status">
       <p>{bodyStatusString}</p>
       <p></p>
@@ -149,8 +165,45 @@
       <p></p>
       <p> Distance to the monitor: {window.parseInt(10 * monitorDistance) / 10} cm</p>
     </Section>
+
     <Section title="Settings">
       <Settings />
+    </Section>
+    </div>
+    <Section title="Leaderboard">
+
+    <table>
+      <tr>
+        <th>№</th>
+        <th>Name</th>
+        <th>Study time</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Artem Lukoianov</td>
+        <td>13h42m</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Nikita Karamov</td>
+        <td>13h30m</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Anna Valiullina</td>
+        <td>10h44m</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Oganes Manasian</td>
+        <td>10h22m</td>
+      </tr>
+      <tr>
+        <td><b>5</b></td>
+        <td><b>Guest</b></td>
+        <td><b>{0}h{0}m</b></td>
+      </tr>
+    </table>
     </Section>
   </div>
 </main>
