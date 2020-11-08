@@ -178,17 +178,21 @@ function calculateLightningStatus(canvasCtx, bodyPartMap, width, height) {
     }
   }
   const imagePixelsIntensity = imagePixelsIntensityCum / imagePixels;
+
+  var ret = {
+    status: null
+  }
   // return imagePixelsIntensity.toString()
   if (imagePixelsIntensity < 90)
-    return "bad";
+    ret.status = "bad"
   else
     if (imagePixelsIntensity < 120)
-      return "good";
+      ret.status = "good";
     else
       if (imagePixelsIntensity >= 120)
-        return "perfect"
+        ret.status = "perfect";
 
-
+  return ret;
 }
 
 

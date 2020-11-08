@@ -9,4 +9,6 @@ export const bodyStatusStore = writable({
   viewAngle: null,
 });
 
-export const lightningStatusStore = writable({});
+export const lightningStatusStore = writable({
+  status: null
+});
