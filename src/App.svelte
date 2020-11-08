@@ -30,18 +30,9 @@
         hours++;
         minutes = 0;
     }
-    if (hours < 10)
-      hoursToPlot = "0" + hours;
-    else
-      hoursToPlot = hours;
-    if (minutes < 10)
-      minutesToPlot = "0" + minutes;
-    else
-      minutesToPlot = minutes;
-    if (seconds < 10)
-      secondsToPlot = "0" + seconds;
-    else
-      secondsToPlot = seconds;
+    hoursToPlot = (hours < 10) ? "0" + hours : hours;
+    minutesToPlot = (minutes < 10) ? "0" + minutes : minutes;
+    secondsToPlot = (seconds < 10) ? "0" + seconds : seconds;
     counter.innerHTML = hoursToPlot + "h" + minutesToPlot + "m" + secondsToPlot + "s";
     if (counting) {
         seconds++;
@@ -76,11 +67,14 @@
     if (status.monitorPosition > 0.2) {
       // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
       monitorPositionString = `Please consider lowering the screen to fix the viewing angle!`;
+
     } else if (status.monitorPosition < -0.2) {
       // Threshold is distance from center of eyes to center of screen at Y coordinate divided by screen height
       monitorPositionString = `Please consider lifting the screen to fix the viewing angle!`;
     }
   });
+
+
 
   lightningStatusStore.subscribe(status => {
     let resStr = "Your lightning is great!";
